@@ -1,5 +1,4 @@
 import * as bp from '.botpress'
-import axios, { AxiosResponse } from 'axios';
 
 interface ConversionRates {
   [currency: string]: number;
@@ -12,26 +11,33 @@ interface APIResponse {
   conversion_rates: ConversionRates;
 }
 
+interface Input { 
+  baseCurrency: string 
+} 
+interface Output { 
+  rates: Record<string, number> 
+  lastUpdate: string 
+} 
+
 const API_KEY = 'a2f65b4c569cb2b4ed3b18e1';
 
 const bot = new bp.Bot({
   actions: {},
 })
 
-async function getExchangeRates(baseCurrency: string): Promise<APIResponse> {
-  try {
-    const url = `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${baseCurrency}`;
-    const response: AxiosResponse<APIResponse> = await axios.get(url);
-    
-    if (response.data.result !== 'success') {
-      throw new Error(`API error: ${response.data.result}`);
-    }
-    
-    return response.data;
-  } catch (error) {
-    throw new Error(`Failed to retrieve exchange rates. Please try again later.`);
-  }
-}
+export async function getExchangeRates({ baseCurrency }: Input): Promise<Output> { 
+  const url = `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${baseCurrency}` 
+  const response = await fetch(url) 
+  const data = await response.json() as APIResponse; 
+  
+  if (data.result !== 'success') { 
+    throw new Error(`API error: ${data.result}`) 
+  } 
+  return { 
+    rates: data.conversion_rates, 
+    lastUpdate: data.time_last_update_utc 
+  } 
+} 
 
 const sendMessage = (client: any, conversationId: string, userId: string, text: string) => {
   return client.createMessage({
@@ -68,8 +74,9 @@ bot.on.message("*", async (props) => {
     }
 
     try {
-      const ratesData = await getExchangeRates(fromCurrency);
-      const rate = ratesData.conversion_rates[toCurrency];
+      const ratesData = await getExchangeRates({ baseCurrency: fromCurrency });
+      
+      const rate = ratesData.rates[toCurrency];
       
       if (!rate) {
         return sendMessage(client, conversationId, userId, `Invalid currency pair. Could not find a rate for ${fromCurrency} to ${toCurrency}.`);
