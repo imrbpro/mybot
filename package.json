@@ -6,10 +6,11 @@
   "private": true,
   "dependencies": {
     "@botpress/client": "1.21.0",
-    "@botpress/sdk": "4.15.2",
+    "@botpress/sdk": "^4.15.2",
     "axios": "^1.11.0",
     "bp": "^0.1.1-beta",
-    "build": "^0.1.4"
+    "build": "^0.1.4",
+    "zod": "^4.0.17"
   },
   "devDependencies": {
     "@types/node": "^22.16.4",
